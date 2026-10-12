@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quran translation progress</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@300;400;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F7F5; --surface:#FFFFFF; --ink:#1D2826; --muted:#6A7672; --line:#DCE2DE;
+  --done:#2E6A55; --part:#B98A35; --empty:#E6EBE8;
+  --serif:"Spectral",Georgia,"Times New Roman",serif;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141A19; --surface:#1B2321; --ink:#E5ECE9; --muted:#8E9B97; --line:#2C3634;
+    --done:#5FAF90; --part:#D6AA58; --empty:#26302E;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141A19; --surface:#1B2321; --ink:#E5ECE9; --muted:#8E9B97; --line:#2C3634;
+  --done:#5FAF90; --part:#D6AA58; --empty:#26302E;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none !important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+main{max-width:760px;margin:0 auto;padding:40px 20px 64px}
+h1{font-family:var(--serif);font-weight:400;font-size:1.25rem;margin:0;color:var(--muted)}
+.hero{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin:8px 0 20px}
+.pct{font-family:var(--serif);font-weight:300;font-size:clamp(4rem,16vw,7rem);line-height:1;letter-spacing:-.02em}
+.pct small{font-size:.4em;color:var(--muted);margin-left:2px}
+.hero p{margin:0;color:var(--muted);font-size:.95rem}
+
+/* the strip: every surah, sized by its ayah count */
+.strip{display:flex;height:56px;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg{position:relative;background:var(--empty);min-width:1px;cursor:pointer}
+.seg i{position:absolute;left:0;bottom:0;width:100%;display:block}
+.seg.full i{background:var(--done);height:100%}
+.seg.half i{background:var(--part)}
+.seg:hover{outline:1px solid var(--ink);outline-offset:-1px;z-index:1}
+.strip-legend{display:flex;justify-content:space-between;color:var(--muted);font-size:.8rem;margin-top:6px}
+.tip{min-height:1.5em;font-size:.85rem;color:var(--ink);margin-top:2px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:24px 20px;margin:36px 0;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat b{display:block;font-family:var(--serif);font-weight:400;font-size:1.75rem;line-height:1.2}
+.stat span{color:var(--muted);font-size:.85rem}
+
+h2{font-family:var(--serif);font-weight:400;font-size:1.3rem;margin:0 0 4px}
+.hint{color:var(--muted);font-size:.875rem;margin:0 0 12px}
+.quick{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text],input[type=search],input[type=number]{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:9px 12px}
+input:focus-visible,button:focus-visible,.seg:focus-visible{outline:2px solid var(--done);outline-offset:2px}
+.quick input{flex:1;min-width:180px}
+button{font:inherit;font-weight:500;font-size:.9rem;border-radius:6px;padding:9px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.primary{background:var(--done);border-color:var(--done);color:var(--bg)}
+.msg{font-size:.85rem;color:var(--muted);min-height:1.4em;margin-top:6px}
+
+section{margin-top:40px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.toolbar input{flex:1;min-width:160px}
+.filters{display:flex;gap:4px}
+.filters button{padding:7px 11px;border-color:transparent;background:transparent;color:var(--muted)}
+.filters button[aria-pressed=true]{color:var(--ink);border-color:var(--line);background:var(--surface)}
+
+.list{list-style:none;margin:0;padding:0}
+.row{display:grid;grid-template-columns:2.2rem 1fr auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.row .n{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.row .name{font-weight:500}
+.row .name small{display:block;color:var(--muted);font-weight:400;font-size:.8rem}
+.row .bar{height:3px;background:var(--empty);border-radius:2px;margin-top:5px;max-width:220px}
+.row .bar i{display:block;height:100%;border-radius:2px;background:var(--part)}
+.row.complete .bar i{background:var(--done)}
+.row input[type=number]{width:5.2rem;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
+.row label.chk{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted);cursor:pointer}
+.row input[type=checkbox]{width:18px;height:18px;accent-color:var(--done)}
+.empty-list{color:var(--muted);padding:20px 0}
+
+footer{margin-top:48px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+footer .sp{flex:1}
+footer button{font-size:.85rem}
+.danger{color:#B4483C}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){
+  main{padding-top:28px}
+  .row{grid-template-columns:1.8rem 1fr auto;row-gap:6px}
+  .row label.chk{grid-column:2/4;justify-self:start}
+}
+@media (prefers-reduced-motion:no-preference){
+  .seg i,.row .bar i{transition:height .3s ease,width .3s ease}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Quran translation progress</h1>
+  <div class="hero">
+    <div class="pct" id="pct">0<small>%</small></div>
+    <p id="heroLine">of 6,236 ayahs translated</p>
+  </div>
+
+  <div class="strip" id="strip" role="img" aria-label="Progress across all 114 surahs"></div>
+  <div class="strip-legend"><span>Al-Fatihah</span><span>An-Nas</span></div>
+  <div class="tip" id="tip" aria-live="polite"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <section style="margin-top:0">
+    <h2>Quick update</h2>
+    <p class="hint">Mark surahs complete by number, e.g. <em>1, 36, 67, 78-114</em>. For partial surahs, enter the ayah you've reached in the list below.</p>
+    <div class="quick">
+      <label for="quickInput" class="visually-hidden">Surah numbers</label>
+      <input type="text" id="quickInput" placeholder="78-114" autocomplete="off">
+      <button class="primary" id="quickBtn">Mark complete</button>
+    </div>
+    <div class="msg" id="quickMsg" aria-live="polite"></div>
+  </section>
+
+  <section>
+    <h2>Surahs</h2>
+    <div class="toolbar">
+      <label for="search" class="visually-hidden">Search surahs</label>
+      <input type="search" id="search" placeholder="Search by name or number">
+      <div class="filters" role="group" aria-label="Filter">
+        <button data-f="all" aria-pressed="true">All</button>
+        <button data-f="complete" aria-pressed="false">Done</button>
+        <button data-f="partial" aria-pressed="false">Partial</button>
+        <button data-f="none" aria-pressed="false">To do</button>
+      </div>
+    </div>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <footer>
+    <button id="exportBtn">Download backup</button>
+    <button id="importBtn">Restore backup</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+    <span class="sp"></span>
+    <button id="resetBtn" class="danger">Reset all</button>
+  </footer>
+</main>
+
+<script>
+const SURAHS = [
+["Al-Fatihah",7],["Al-Baqarah",286],["Aal-Imran",200],["An-Nisa",176],["Al-Ma'idah",120],["Al-An'am",165],["Al-A'raf",206],["Al-Anfal",75],["At-Tawbah",129],["Yunus",109],
+["Hud",123],["Yusuf",111],["Ar-Ra'd",43],["Ibrahim",52],["Al-Hijr",99],["An-Nahl",128],["Al-Isra",111],["Al-Kahf",110],["Maryam",98],["Ta-Ha",135],
+["Al-Anbiya",112],["Al-Hajj",78],["Al-Mu'minun",118],["An-Nur",64],["Al-Furqan",77],["Ash-Shu'ara",227],["An-Naml",93],["Al-Qasas",88],["Al-Ankabut",69],["Ar-Rum",60],
+["Luqman",34],["As-Sajdah",30],["Al-Ahzab",73],["Saba",54],["Fatir",45],["Ya-Sin",83],["As-Saffat",182],["Sad",88],["Az-Zumar",75],["Ghafir",85],
+["Fussilat",54],["Ash-Shura",53],["Az-Zukhruf",89],["Ad-Dukhan",59],["Al-Jathiyah",37],["Al-Ahqaf",35],["Muhammad",38],["Al-Fath",29],["Al-Hujurat",18],["Qaf",45],
+["Adh-Dhariyat",60],["At-Tur",49],["An-Najm",62],["Al-Qamar",55],["Ar-Rahman",78],["Al-Waqi'ah",96],["Al-Hadid",29],["Al-Mujadilah",22],["Al-Hashr",24],["Al-Mumtahanah",13],
+["As-Saff",14],["Al-Jumu'ah",11],["Al-Munafiqun",11],["At-Taghabun",18],["At-Talaq",12],["At-Tahrim",12],["Al-Mulk",30],["Al-Qalam",52],["Al-Haqqah",52],["Al-Ma'arij",44],
+["Nuh",28],["Al-Jinn",28],["Al-Muzzammil",20],["Al-Muddaththir",56],["Al-Qiyamah",40],["Al-Insan",31],["Al-Mursalat",50],["An-Naba",40],["An-Nazi'at",46],["Abasa",42],
+["At-Takwir",29],["Al-Infitar",19],["Al-Mutaffifin",36],["Al-Inshiqaq",25],["Al-Buruj",22],["At-Tariq",17],["Al-A'la",19],["Al-Ghashiyah",26],["Al-Fajr",30],["Al-Balad",20],
+["Ash-Shams",15],["Al-Layl",21],["Ad-Duha",11],["Ash-Sharh",8],["At-Tin",8],["Al-Alaq",19],["Al-Qadr",5],["Al-Bayyinah",8],["Az-Zalzalah",8],["Al-Adiyat",11],
+["Al-Qari'ah",11],["At-Takathur",8],["Al-Asr",3],["Al-Humazah",9],["Al-Fil",5],["Quraysh",4],["Al-Ma'un",7],["Al-Kawthar",3],["Al-Kafirun",6],["An-Nasr",3],
+["Al-Masad",5],["Al-Ikhlas",4],["Al-Falaq",5],["An-Nas",6]
+];
+const TOTAL = SURAHS.reduce((s,x)=>s+x[1],0);
+const KEY = "quran-translation-tracker-v1";
+const fmt = n => n.toLocaleString("en-GB");
+
+// state: done[i] = ayahs translated in surah i+1; history: {"YYYY-MM-DD": totalDone}
+let state = { done: Array(114).fill(0), history: {} };
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p.done) && p.done.length === 114) state.done = p.done.map((v,i)=>clamp(v,i));
+    if (p.history && typeof p.history === "object") state.history = p.history;
+  }
+} catch(e) {}
+
+function clamp(v,i){ v = Math.round(Number(v)||0); return Math.max(0, Math.min(SURAHS[i][1], v)); }
+function today(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function totalDone(){ return state.done.reduce((a,b)=>a+b,0); }
+
+function save(){
+  state.history[today()] = totalDone();
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+/* ---------- strip ---------- */
+const strip = document.getElementById("strip");
+const tip = document.getElementById("tip");
+SURAHS.forEach(([name,ay],i)=>{
+  const s = document.createElement("div");
+  s.className = "seg"; s.style.flex = ay + " 1 0";
+  s.tabIndex = -1;
+  s.appendChild(document.createElement("i"));
+  s.addEventListener("mouseenter",()=>showTip(i));
+  s.addEventListener("click",()=>{ showTip(i); jumpTo(i); });
+  strip.appendChild(s);
+});
+strip.addEventListener("mouseleave",()=>tip.textContent="");
+function showTip(i){ const [n,a]=SURAHS[i]; tip.textContent = `${i+1}. ${n}: ${state.done[i]} of ${a} ayahs`; }
+function jumpTo(i){
+  search.value = ""; setFilter("all");
+  const row = document.querySelector(`.row[data-i="${i}"]`);
+  if (row){ row.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); row.querySelector("input[type=number]").focus({preventScroll:true}); }
+}
+
+/* ---------- list ---------- */
+const list = document.getElementById("list");
+SURAHS.forEach(([name,ay],i)=>{
+  const li = document.createElement("li");
+  li.className = "row"; li.dataset.i = i;
+  li.innerHTML = `
+    <span class="n">${i+1}</span>
+    <div class="name">${name}<small>${ay} ayahs</small><div class="bar"><i></i></div></div>
+    <input type="number" min="0" max="${ay}" inputmode="numeric" aria-label="Ayahs done in ${name}">
+    <label class="chk"><input type="checkbox" aria-label="${name} complete"> Done</label>`;
+  const num = li.querySelector("input[type=number]");
+  const chk = li.querySelector("input[type=checkbox]");
+  num.addEventListener("change",()=>{ state.done[i]=clamp(num.value,i); save(); render(); });
+  chk.addEventListener("change",()=>{ state.done[i]= chk.checked ? ay : 0; save(); render(); });
+  list.appendChild(li);
+});
+const emptyMsg = document.createElement("li");
+emptyMsg.className = "empty-list"; emptyMsg.textContent = "No surahs match. Clear the search or pick another filter.";
+list.appendChild(emptyMsg);
+
+/* ---------- filters ---------- */
+let filter = "all";
+const search = document.getElementById("search");
+document.querySelectorAll(".filters button").forEach(b=>b.addEventListener("click",()=>setFilter(b.dataset.f)));
+function setFilter(f){ filter=f; document.querySelectorAll(".filters button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.f===f)); applyFilter(); }
+search.addEventListener("input",applyFilter);
+function applyFilter(){
+  const q = search.value.trim().toLowerCase().replace(/['\- ]/g,"");
+  let shown = 0;
+  list.querySelectorAll(".row").forEach(li=>{
+    const i = +li.dataset.i, d = state.done[i], a = SURAHS[i][1];
+    const status = d===a ? "complete" : d>0 ? "partial" : "none";
+    const nameKey = SURAHS[i][0].toLowerCase().replace(/['\- ]/g,"");
+    const match = !q || String(i+1)===q || nameKey.includes(q);
+    const show = match && (filter==="all" || filter===status);
+    li.hidden = !show; if (show) shown++;
+  });
+  emptyMsg.hidden = shown>0;
+}
+
+/* ---------- quick update ---------- */
+const quickInput = document.getElementById("quickInput"), quickMsg = document.getElementById("quickMsg");
+function parseNums(str){
+  const out = new Set(), bad = [];
+  str.split(/[,\s]+/).filter(Boolean).forEach(tok=>{
+    const m = tok.match(/^(\d+)(?:-(\d+))?$/);
+    if (!m){ bad.push(tok); return; }
+    let a=+m[1], b=m[2]?+m[2]:a; if (a>b) [a,b]=[b,a];
+    if (a<1||b>114){ bad.push(tok); return; }
+    for (let k=a;k<=b;k++) out.add(k);
+  });
+  return {nums:[...out], bad};
+}
+function quickApply(){
+  const {nums,bad} = parseNums(quickInput.value);
+  if (!nums.length){ quickMsg.textContent = bad.length ? `Couldn't read "${bad.join(", ")}". Use surah numbers 1–114, like 2, 5-9.` : "Enter surah numbers first, like 78-114."; return; }
+  nums.forEach(n=>state.done[n-1]=SURAHS[n-1][1]);
+  save(); render();
+  quickMsg.textContent = `Marked ${nums.length} surah${nums.length>1?"s":""} complete.` + (bad.length ? ` Skipped "${bad.join(", ")}".` : "");
+  quickInput.value = "";
+}
+document.getElementById("quickBtn").addEventListener("click",quickApply);
+quickInput.addEventListener("keydown",e=>{ if(e.key==="Enter") quickApply(); });
+
+/* ---------- stats ---------- */
+function pace(){
+  const days = Object.keys(state.history).sort();
+  if (days.length<2) return null;
+  const first = days[0], last = days[days.length-1];
+  const span = (new Date(last) - new Date(first)) / 86400000;
+  if (span < 7) return null;
+  const gained = state.history[last] - state.history[first];
+  if (gained <= 0) return null;
+  const perDay = gained / span;
+  const remaining = TOTAL - totalDone();
+  const eta = new Date(Date.now() + (remaining / perDay) * 86400000);
+  return { perWeek: Math.round(perDay*7), eta };
+}
+function render(){
+  const d = totalDone(), pct = d/TOTAL*100;
+  const complete = state.done.filter((v,i)=>v===SURAHS[i][1]).length;
+  const partial = state.done.filter((v,i)=>v>0 && v<SURAHS[i][1]).length;
+  document.getElementById("pct").innerHTML = (pct>=10||pct===0 ? pct.toFixed(pct===100||pct===0?0:1) : pct.toFixed(2)) + "<small>%</small>";
+  document.getElementById("heroLine").textContent = `${fmt(d)} of ${fmt(TOTAL)} ayahs translated`;
+
+  const p = pace();
+  const stats = [
+    [fmt(TOTAL-d), "ayahs remaining"],
+    [`${complete} / 114`, "surahs complete"],
+    [partial, partial===1 ? "surah in progress" : "surahs in progress"],
+    [(d/TOTAL*30).toFixed(1), "juz equivalent (of 30)"],
+    p ? [fmt(p.perWeek), "ayahs per week"] : ["–", "ayahs per week, after a week of updates"],
+    p ? [p.eta.toLocaleDateString("en-GB",{month:"short",year:"numeric"}), "estimated finish at this pace"] : ["–", "estimated finish"]
+  ];
+  if (d===TOTAL) stats[5] = ["Complete", "alhamdulillah"];
+  document.getElementById("stats").innerHTML = stats.map(([b,s])=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+
+  strip.querySelectorAll(".seg").forEach((seg,i)=>{
+    const a = SURAHS[i][1], v = state.done[i];
+    seg.className = "seg" + (v===a ? " full" : v>0 ? " half" : "");
+    seg.firstChild.style.height = v===a ? "100%" : (v/a*100)+"%";
+  });
+  list.querySelectorAll(".row").forEach(li=>{
+    const i = +li.dataset.i, a = SURAHS[i][1], v = state.done[i];
+    li.classList.toggle("complete", v===a);
+    const num = li.querySelector("input[type=number]");
+    if (document.activeElement !== num) num.value = v || "";
+    num.placeholder = "0";
+    li.querySelector("input[type=checkbox]").checked = v===a;
+    li.querySelector(".bar i").style.width = (v/a*100)+"%";
+  });
+  applyFilter();
+}
+
+/* ---------- backup ---------- */
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `quran-progress-${today()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+const importFile = document.getElementById("importFile");
+document.getElementById("importBtn").addEventListener("click",()=>importFile.click());
+importFile.addEventListener("change",()=>{
+  const f = importFile.files[0]; if (!f) return;
+  f.text().then(t=>{
+    const p = JSON.parse(t);
+    if (!Array.isArray(p.done) || p.done.length!==114) throw new Error();
+    state = { done: p.done.map((v,i)=>clamp(v,i)), history: p.history||{} };
+    save(); render(); quickMsg.textContent = "Backup restored.";
+  }).catch(()=>{ quickMsg.textContent = "That file isn't a tracker backup. Choose a .json file made with Download backup."; });
+  importFile.value = "";
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if (!confirm("Reset all progress? Download a backup first if you might want it back.")) return;
+  state = { done: Array(114).fill(0), history: {} };
+  try { localStorage.removeItem(KEY); } catch(e) {}
+  render(); quickMsg.textContent = "Progress reset.";
+});
+
+render();
+</script>
+</body>
+</html>
